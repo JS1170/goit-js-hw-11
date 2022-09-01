@@ -1,9 +1,18 @@
 import { refs } from './index';
 
 export function components(hits) {
-    const markupHits = hits.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
-        return `<div class="photo-card">
-        <img src="${webformatURL}" alt="${tags}" loading="lazy" width=300 hight=200/>
+  const markupHits = hits.map(
+    ({
+      webformatURL,
+      largeImageURL,
+      tags,
+      likes,
+      views,
+      comments,
+      downloads,
+    }) => {
+      return `<div class="photo-card">
+        <a href=${largeImageURL}><img src="${webformatURL}" alt="${tags}" loading="lazy" width=300 hight=200/></a>
         <div class="info">
             <p class="info-item">
                 <b>Likes ${likes} </b>
@@ -18,8 +27,8 @@ export function components(hits) {
                 <b>Downloads ${downloads}</b>
             </p>
         </div>
-    </div>`
-    })
-    refs.div.insertAdjacentHTML('beforeend', markupHits.join(''));
+    </div>`;
+    }
+  );
+  refs.div.insertAdjacentHTML('beforeend', markupHits.join(''));
 }
-

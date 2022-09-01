@@ -1,7 +1,9 @@
-import './common.css';
-// import createMarkup from '.create-markup.js';
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 import { components } from './create-markup';
 import PhotoApiService from './api-service';
+import './common.css';
 
 export const refs = {
   searchForm: document.querySelector('.search-form'),
@@ -10,36 +12,81 @@ export const refs = {
 };
 
 const photoApiService = new PhotoApiService();
+const lightbox = new SimpleLightbox('.gallery a');
 
 refs.searchForm.addEventListener('submit', onSearch);
 refs.loadMoreBtn.addEventListener('click', onLoadMore);
 
-function onSearch(e) {
+isHidden();
+async function onSearch(e) {
   e.preventDefault();
+  try {
+    photoApiService.query = e.currentTarget.elements.searchQuery.value;
+    isHidden();
+    photoApiService.resetPage();
 
-  photoApiService.query = e.currentTarget.elements.searchQuery.value;
-  photoApiService.resetPage();
-  photoApiService.fetchArticles().then(addCompontents => {
+    const result = await photoApiService.fetchArticles();
+    console.log(result);
+    console.log(result.data);
+    console.log(result.data.hits);
     clearDiv();
-    components(addCompontents);
-    if (addCompontents.length === 0) {
-      alert(
+    if (result.data.hits.length === 0) {
+      Notify.failure(
         'Sorry, there are no images matching your search query. Please try again.'
       );
       return;
     }
-  });
+    components(result.data.hits);
+    lightbox.refresh();
+    Notify.success(`Hooray! We found ${result.data.totalHits} images.`);
+    isShow();
+  } catch (error) {
+    console.log(error);
+  }
 }
 
-function onLoadMore() {
-  photoApiService.fetchArticles().then(hits => {
-    components(hits);
-    if (photoApiService.per_page * photoApiService.page > hits) {
-      alert("We're sorry, but you've reached the end of search results.");
+async function onLoadMore() {
+  try {
+    photoApiService.incrementPage();
+    const result = await photoApiService.fetchArticles();
+    components(result.data.hits);
+    lightbox.refresh();
+
+    scrollPage();
+
+    if (
+      photoApiService.per_page * photoApiService.page >
+      result.data.totalHits
+    ) {
+      Notify.failure(
+        "We're sorry, but you've reached the end of search results."
+      );
+      isHidden();
     }
-  });
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 function clearDiv() {
   refs.div.innerHTML = '';
+}
+
+function scrollPage() {
+  const { height: cardHeight } = document
+    .querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
+}
+
+function isHidden() {
+  refs.loadMoreBtn.style.display = 'none';
+}
+
+function isShow() {
+  refs.loadMoreBtn.style.display = 'block';
 }
